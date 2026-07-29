@@ -3,12 +3,19 @@ import { program } from "commander";
 import fs from "fs";
 
 import {MetroMapSchema} from "./schema";
+import {get_line_stations} from "./lines";
 
 program
     .name("metro-designer-parser")
     .description("Parser and toolkit for Tennessine's Metro Designer")
     .argument("<path | json>", "Metro Designer JSON to parse, as a file path or raw JSON string")
-    .argument("[action]", "Action to perform on the JSON", "validate");
+    .argument("[action]", "Action to perform on the JSON", "validate")
+    .addHelpText("after", `
+Actions:
+  validate    Validate the JSON (default)
+  lines       Output the line details
+  nameplates  Generate nameplate images for each station
+  `);
 
 program.parse();
 
@@ -57,5 +64,12 @@ const action = program.args[1] ?? "validate";
 switch (action) {
     case "validate":
         console.log("Valid!");
+        break;
+    case "lines":
+        for (const line of metro_map.lines) {
+            const stations = get_line_stations(metro_map, line.name);
+            console.log(`Line: ${line.name}`);
+            console.log(`  Stations: ${stations.map((s) => s.name).join(", ")}`);
+        }
         break;
 }
