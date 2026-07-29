@@ -11,6 +11,7 @@ interface NameplateOptions {
     previous_station?: Station;
     neighbour_station_names_use_line_color?: boolean;
     bold_next_station_name?: boolean;
+    bold_previous_station_name?: boolean;
     width: number;
     height: number;
     bg_color: string;
@@ -25,7 +26,8 @@ const default_nameplate_options: NameplateOptions = {
     show_icon: true,
     next_direction: "left",
     neighbour_station_names_use_line_color: false,
-    bold_next_station_name: true,
+    bold_next_station_name: false,
+    bold_previous_station_name: false,
     width: 800,
     height: 200,
     bg_color: "#FFFFFF",
@@ -83,8 +85,9 @@ export const generate_nameplate = (station: Station, line: Line, options: Partia
 
     // add next and previous stations along bottom with arrows if given, ensuring the next direction is respected
     if (opts.next_station || opts.previous_station) {
-        const next_font = opts.font_override_bold ?? `bold ${font_sizes.small}px label-icons, NameplateBold`;
-        const prev_font = opts.font_override_regular ?? `${font_sizes.small}px label-icons, NameplateRegular`;
+        const regular_neighbour_font = opts.font_override_regular ?? `${font_sizes.small}px label-icons, NameplateRegular`;
+        const bold_neighbour_font = opts.font_override_bold ?? `bold ${font_sizes.small}px label-icons, NameplateBold`;
+
         ctx.textBaseline = "bottom";
 
         if (opts.neighbour_station_names_use_line_color) {
@@ -99,10 +102,10 @@ export const generate_nameplate = (station: Station, line: Line, options: Partia
         if (left_station) {
             ctx.textAlign = "left";
 
-            if (opts.next_direction === "left" && opts.bold_next_station_name) {
-                ctx.font = next_font;
+            if (opts.next_direction === "left" && opts.bold_next_station_name || opts.next_direction === "right" && opts.bold_previous_station_name) {
+                ctx.font = bold_neighbour_font;
             } else {
-                ctx.font = prev_font;
+                ctx.font = regular_neighbour_font;
             }
 
             ctx.fillText(`${ICONS.arrow_left} ${left_station.name}`, 10, opts.height - 12);
@@ -111,10 +114,10 @@ export const generate_nameplate = (station: Station, line: Line, options: Partia
         if (right_station) {
             ctx.textAlign = "right";
 
-            if (opts.next_direction === "right" && opts.bold_next_station_name) {
-                ctx.font = next_font;
+            if (opts.next_direction === "right" && opts.bold_next_station_name || opts.next_direction === "left" && opts.bold_previous_station_name) {
+                ctx.font = bold_neighbour_font;
             } else {
-                ctx.font = prev_font;
+                ctx.font = regular_neighbour_font;
             }
 
             ctx.fillText(`${right_station.name} ${ICONS.arrow_right}`, opts.width - 10, opts.height - 12)
