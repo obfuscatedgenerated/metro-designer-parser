@@ -9,6 +9,7 @@ interface NameplateOptions {
     next_direction: "left" | "right";
     next_station?: Station;
     previous_station?: Station;
+    neighbour_station_names_use_line_color?: boolean;
     width: number;
     height: number;
     bg_color: string;
@@ -22,6 +23,7 @@ const default_nameplate_options: NameplateOptions = {
     show_line_name: true,
     show_icon: true,
     next_direction: "left",
+    neighbour_station_names_use_line_color: false,
     width: 800,
     height: 200,
     bg_color: "#FFFFFF",
@@ -38,11 +40,12 @@ export const generate_nameplate = (station: Station, line: Line, options: Partia
     ctx.fillStyle = opts.bg_color;
     ctx.fillRect(0, 0, opts.width, opts.height);
 
+    // TODO: ability to override these ratios
     const font_sizes = {
-        small: opts.width / 33,
-        medium: opts.width / 22,
+        small: opts.width / 35,
+        medium: opts.width / 24,
         large: opts.width / 11
-    }
+    };
 
     // write station name
     ctx.fillStyle = opts.fg_color;
@@ -80,6 +83,12 @@ export const generate_nameplate = (station: Station, line: Line, options: Partia
     if (opts.next_station || opts.previous_station) {
         ctx.font = opts.font_override_regular ?? `${font_sizes.small}px label-icons, NameplateRegular`;
         ctx.textBaseline = "bottom";
+
+        if (opts.neighbour_station_names_use_line_color) {
+            ctx.fillStyle = line.color;
+        } else {
+            ctx.fillStyle = opts.fg_color;
+        }
 
         const left_station = opts.next_direction === "left" ? opts.next_station : opts.previous_station;
         const right_station = opts.next_direction === "left" ? opts.previous_station : opts.next_station;
