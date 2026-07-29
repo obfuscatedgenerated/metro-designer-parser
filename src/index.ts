@@ -124,7 +124,6 @@ switch (action) {
             for (const station of stations) {
                 const filtered_connections = connections.filter(([s0, s1]) => s0!.id === station.id || s1!.id === station.id);
                 const chain = connections_to_chain(filtered_connections as HydratedConnectionPair[]);
-                console.log(filtered_connections, chain)
                 const station_index = chain.findIndex((s) => s.id === station.id);
                 const previous_station = station_index > 0 ? chain[station_index - 1] : undefined;
                 const next_station = station_index < chain.length - 1 ? chain[station_index + 1] : undefined;
