@@ -1,4 +1,6 @@
-import {MetroMap} from "./schema";
+import {MetroMap, Station} from "./schema";
+
+export type HydratedConnectionPair = [Station, Station];
 
 export const get_line_stations = (metro_map: MetroMap, line_name: string) => {
     const line = metro_map.lines.find((l) => l.name === line_name);
@@ -37,11 +39,73 @@ export const get_line_stations = (metro_map: MetroMap, line_name: string) => {
         add_station_id(station_1!.id);
     }
 
-    return station_ids.map((id) => {
+    const stations = station_ids.map((id) => {
         const station = metro_map.stations.find((s) => s.id === id);
         if (!station) {
             throw new Error(`Station with id ${id} not found`);
         }
         return station;
     });
+
+    return {
+        stations,
+        connections: station_pairs as HydratedConnectionPair[],
+    }
+}
+
+// joins a list of connection pairs into a single ordered list of stations, starting from the first station (has no right neighbor) and ending with the last station (has no left neighbor)
+export const connections_to_chain = (connections: HydratedConnectionPair[]): Station[] => {
+    if (connections.length === 0) {
+        return [];
+    }
+
+    // build a map of station id to its neighbors
+    const neighbor_map = new Map<number, Set<number>>();
+    for (const [s0, s1] of connections) {
+        if (!neighbor_map.has(s0.id)) {
+            neighbor_map.set(s0.id, new Set());
+        }
+        if (!neighbor_map.has(s1.id)) {
+            neighbor_map.set(s1.id, new Set());
+        }
+        neighbor_map.get(s0.id)!.add(s1.id);
+        neighbor_map.get(s1.id)!.add(s0.id);
+    }
+
+    // find the starting station (has only one neighbor)
+    let start_station_id: number | null = null;
+    for (const [station_id, neighbors] of neighbor_map.entries()) {
+        if (neighbors.size === 1) {
+            start_station_id = station_id;
+            break;
+        }
+    }
+
+    if (start_station_id === null) {
+        throw new Error("No starting station found (all stations have two neighbors)");
+    }
+
+    // traverse the chain
+    const chain: Station[] = [];
+    const visited_station_ids = new Set<number>();
+    let current_station_id: number | null = start_station_id;
+
+    while (current_station_id !== null) {
+        const station = connections.flatMap(([s0, s1]) => [s0, s1]).find((s) => s.id === current_station_id);
+        if (!station) {
+            throw new Error(`Station with id ${current_station_id} not found`);
+        }
+        chain.push(station);
+        visited_station_ids.add(current_station_id);
+
+        // find the next station (the neighbor that hasn't been visited yet)
+        const neighbors = neighbor_map.get(current_station_id);
+        if (!neighbors) {
+            break;
+        }
+        const next_station_id = Array.from(neighbors).find((neighbor_id) => !visited_station_ids.has(neighbor_id)) || null;
+        current_station_id = next_station_id;
+    }
+
+    return chain;
 }
